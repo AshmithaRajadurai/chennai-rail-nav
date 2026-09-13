@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@keyframes route-flow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-route-flow {
+  animation: route-flow 1.2s linear infinite;
+}

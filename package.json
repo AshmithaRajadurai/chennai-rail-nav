@@ -1,0 +1,11 @@
+{
+  "name": "chennai-railway-navigation-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "server:start": "npm --prefix server start",
+    "server:dev": "npm --prefix server run dev",
+    "client:dev": "npm --prefix client run dev",
+    "client:build": "npm --prefix client run build"
+  }
+}
