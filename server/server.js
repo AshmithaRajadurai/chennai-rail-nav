@@ -8,6 +8,11 @@ import stationRoutes from './routes/stationRoutes.js';
 import routeRoutes from './routes/routeRoutes.js';
 import facilityRoutes from './routes/facilityRoutes.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load env from server/.env if present, or fallback to root / system environment
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 dotenv.config();
 
 // Connect to MongoDB
@@ -29,22 +34,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Serve frontend in production
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Serve compiled React frontend in production
 const clientDistPath = path.resolve(__dirname, '../client/dist');
-
 app.use(express.static(clientDistPath));
 
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    return next();
+// Express 5 compatible SPA fallback handler
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    return res.sendFile(path.join(clientDistPath, 'index.html'), (err) => {
+      if (err) next();
+    });
   }
-  res.sendFile(path.join(clientDistPath, 'index.html'), (err) => {
-    if (err) {
-      next();
-    }
-  });
+  next();
 });
 
 app.listen(PORT, () => {
