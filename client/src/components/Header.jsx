@@ -7,7 +7,6 @@ import {
   ChevronDown, 
   Eye, 
   Type, 
-  Wrench, 
   SlidersHorizontal, 
   Globe 
 } from 'lucide-react';
@@ -25,7 +24,6 @@ export default function Header({
   onToggleHighContrast,
   isLargeText,
   onToggleLargeText,
-  onOpenFacilitySimulator,
   language = 'en',
   onSelectLanguage,
 }) {
@@ -166,20 +164,6 @@ export default function Header({
                 </div>
               )}
             </div>
-
-            {/* Facility Control Simulator Button */}
-            <button
-              type="button"
-              onClick={onOpenFacilitySimulator}
-              className={`px-3 py-1.5 rounded-xl border flex items-center space-x-1.5 text-xs font-bold transition-all cursor-pointer ${
-                isHighContrast
-                  ? 'border-white bg-black text-yellow-400 hover:bg-yellow-400 hover:text-black'
-                  : 'border-amber-600/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300'
-              }`}
-            >
-              <Wrench className="h-3.5 w-3.5 text-amber-400" />
-              <span>{t('facilityControl', language)}</span>
-            </button>
 
             {/* Accessibility Options Menu */}
             <div className="relative">

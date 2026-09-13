@@ -4,7 +4,6 @@ import NavigationControls from './components/NavigationControls';
 import StationMap from './components/StationMap';
 import DirectionsList from './components/DirectionsList';
 import VoiceGuide from './components/VoiceGuide';
-import FacilitySimulator from './components/FacilitySimulator';
 import LanguageModal from './components/LanguageModal';
 import { 
   fetchStations, 
@@ -13,7 +12,6 @@ import {
 } from './services/api';
 import { 
   AlertCircle, 
-  Wrench, 
   Accessibility, 
   Info, 
   AlertTriangle 
@@ -47,9 +45,6 @@ export default function App() {
   const [isHighContrast, setIsHighContrast] = useState(false);
   const [isLargeText, setIsLargeText] = useState(false);
   const [activeSpokenStep, setActiveSpokenStep] = useState(-1);
-
-  // Facility Maintenance Simulator State
-  const [isFacilitySimulatorOpen, setIsFacilitySimulatorOpen] = useState(false);
   const [maintenanceAlert, setMaintenanceAlert] = useState(null);
 
   // Language Selection Handlers
@@ -233,69 +228,6 @@ export default function App() {
     }
   };
 
-  // Live Facility Status Change handler from Facility Simulator
-  const handleFacilityStatusChanged = async (facility, newStatus) => {
-    try {
-      const updatedDetails = await fetchStationDetails(currentStationId);
-      setStationData(updatedDetails);
-    } catch (e) {
-      console.warn('Could not refresh station edges:', e);
-    }
-
-    const affectedNodeA = facility.fromNode?.nodeId;
-    const affectedNodeB = facility.toNode?.nodeId;
-
-    const pathIncludesFacility = routeResult?.pathNodes?.some(
-      (n, i, arr) =>
-        i < arr.length - 1 &&
-        ((n.nodeId === affectedNodeA && arr[i + 1].nodeId === affectedNodeB) ||
-         (n.nodeId === affectedNodeB && arr[i + 1].nodeId === affectedNodeA))
-    );
-
-    if (!newStatus) {
-      if (pathIncludesFacility) {
-        setMaintenanceAlert({
-          type: 'warning',
-          facilityName: facility.name,
-          message: `${facility.name} ${t('maintenanceOutageMsg', language)}`,
-        });
-      }
-
-      setLoadingRoute(true);
-      try {
-        const newRoute = await calculateRoute({
-          stationId: currentStationId,
-          startNodeId,
-          endNodeId,
-          requireAccessible,
-        });
-        setRouteResult(newRoute);
-        setErrorMessage(null);
-      } catch (err) {
-        setRouteResult(null);
-        setErrorMessage(
-          `${facility.name} ${t('criticalBlockedMsg', language)}`
-        );
-        setMaintenanceAlert({
-          type: 'error',
-          facilityName: facility.name,
-          message: `${facility.name} ${t('criticalBlockedMsg', language)}`,
-        });
-      } finally {
-        setLoadingRoute(false);
-      }
-    } else {
-      if (maintenanceAlert?.facilityName === facility.name) {
-        setMaintenanceAlert({
-          type: 'success',
-          facilityName: facility.name,
-          message: `${facility.name} ${t('restoredMsg', language)}`,
-        });
-      }
-      handleCalculateRoute(requireAccessible);
-    }
-  };
-
   return (
     <div
       className={`min-h-screen flex flex-col font-sans transition-colors ${
@@ -319,7 +251,6 @@ export default function App() {
         onToggleHighContrast={(val) => setIsHighContrast(val)}
         isLargeText={isLargeText}
         onToggleLargeText={(val) => setIsLargeText(val)}
-        onOpenFacilitySimulator={() => setIsFacilitySimulatorOpen(true)}
         language={language}
         onSelectLanguage={handleSelectLanguage}
       />
@@ -483,18 +414,6 @@ export default function App() {
           </div>
         </div>
       </main>
-
-      {/* Facility Maintenance Simulator Modal / Drawer */}
-      <FacilitySimulator
-        isOpen={isFacilitySimulatorOpen}
-        onClose={() => setIsFacilitySimulatorOpen(false)}
-        stationId={currentStationId}
-        edges={stationData.edges}
-        nodes={stationData.nodes}
-        onFacilityStatusChanged={handleFacilityStatusChanged}
-        isHighContrast={isHighContrast}
-        language={language}
-      />
 
       {/* Footer */}
       <footer
