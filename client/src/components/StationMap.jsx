@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Layers, 
   Eye, 
@@ -36,13 +36,12 @@ const LEGEND_LABELS = {
   lift: { en: 'Lift', ta: 'லிஃப்ட்', te: 'లిఫ్ట్', kn: 'ಲಿಫ್ಟ್', ml: 'ലിഫ്റ്റ്', hi: 'लिफ्ट' },
   stairs: { en: 'Stairs', ta: 'படிக்கட்டு', te: 'మెట్లు', kn: 'ಮೆಟ್ಟಿಲುಗಳು', ml: 'പടികൾ', hi: 'सीढ़ियाँ' },
   ramp: { en: 'Ramp', ta: 'ரேம்ப்', te: 'ర్యాంప్', kn: 'ರಾಂಪ್', ml: 'റാംപ്', hi: 'रैंप' },
-  restroom: { en: 'Restroom', ta: 'கழிப்பறை', te: 'టాయిలెట్', kn: 'ಶೌಚಾಲಯ', ml: 'ടോയ്ലറ്റ്', hi: 'शौचालय' },
+  restroom: { en: 'Restroom', ta: 'கழிப்பறை', te: 'టాయిలెట్', kn: 'ಶೌಚಾಲಯ', ml: 'ടോय്ലറ്റ്', hi: 'शौचालय' },
 };
 
 /**
  * Custom collision-free label placements.
- * For adjacent horizontal platform nodes, alternating vertical placement (above / below)
- * prevents horizontal text collision with 100% mathematical certainty.
+ * Alternating vertical placements prevent horizontal label overlap.
  */
 const NODE_LABEL_OFFSETS = {
   // Station 1: MAS (Chennai Central)
@@ -102,9 +101,6 @@ const NODE_LABEL_OFFSETS = {
   TBM_P7_8_STAIRS: { dx: 40, dy: 20 },
 };
 
-/**
- * Crisp SVG iconography rendered inside node circles for rapid visual recognition
- */
 function renderNodeIcon(type) {
   switch (type) {
     case 'gate':
@@ -213,6 +209,10 @@ export default function StationMap({
   startNodeId,
   endNodeId,
   onNodeClick,
+  onSetStartNode,
+  onSetEndNode,
+  mapSelectionMode = null,
+  onCancelMapSelectionMode,
   isHighContrast = false,
   isLargeText = false,
   language = 'en',
@@ -226,6 +226,7 @@ export default function StationMap({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+  const dragDistanceRef = useRef(0);
 
   const activeStationId = station?.stationId || nodes[0]?.stationId || 'MAS';
 
@@ -268,11 +269,13 @@ export default function StationMap({
   const handleMouseDown = (e) => {
     if (e.button !== 0) return;
     setIsPanning(true);
+    dragDistanceRef.current = 0;
     setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
 
   const handleMouseMove = (e) => {
     if (!isPanning) return;
+    dragDistanceRef.current += Math.abs(e.movementX) + Math.abs(e.movementY);
     setPan({
       x: e.clientX - startPan.x,
       y: e.clientY - startPan.y,
@@ -280,6 +283,29 @@ export default function StationMap({
   };
 
   const handleMouseUp = () => setIsPanning(false);
+
+  // Unified node selection handler for circle click or label pill click
+  const handleNodeSelect = (node) => {
+    // If user dragged more than 6px, treat as pan, not click
+    if (dragDistanceRef.current > 6) return;
+
+    if (mapSelectionMode === 'start') {
+      if (onSetStartNode) onSetStartNode(node.nodeId);
+      if (onCancelMapSelectionMode) onCancelMapSelectionMode();
+      setClickedNode(null);
+      return;
+    }
+
+    if (mapSelectionMode === 'destination') {
+      if (onSetEndNode) onSetEndNode(node.nodeId);
+      if (onCancelMapSelectionMode) onCancelMapSelectionMode();
+      setClickedNode(null);
+      return;
+    }
+
+    setClickedNode(node);
+    if (onNodeClick) onNodeClick(node);
+  };
 
   return (
     <div
@@ -289,6 +315,31 @@ export default function StationMap({
           : 'bg-slate-900 border-slate-800 text-slate-100'
       }`}
     >
+      {/* Active Map Selection Mode Banner */}
+      {mapSelectionMode && (
+        <div
+          className={`absolute top-14 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full shadow-2xl border flex items-center gap-2.5 animate-bounce ${
+            mapSelectionMode === 'start'
+              ? 'bg-blue-600 border-blue-400 text-white ring-4 ring-blue-500/30'
+              : 'bg-emerald-600 border-emerald-400 text-white ring-4 ring-emerald-500/30'
+          }`}
+        >
+          <MapPin className="w-4 h-4 animate-spin" />
+          <span className="text-xs font-bold">
+            {mapSelectionMode === 'start'
+              ? t('selectStartPrompt', language)
+              : t('selectDestPrompt', language)}
+          </span>
+          <button
+            type="button"
+            onClick={onCancelMapSelectionMode}
+            className="ml-2 bg-black/40 hover:bg-black/60 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Map Control Bar */}
       <div
         className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 shrink-0 ${
@@ -424,7 +475,6 @@ export default function StationMap({
             <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor={glowColor} />
             </filter>
-            {/* Direction Arrow Marker */}
             <marker
               id="routeArrow"
               viewBox="0 0 10 10"
@@ -456,14 +506,9 @@ export default function StationMap({
               strokeWidth={isHighContrast ? '2.5' : '1.5'}
             />
 
-            {/* =============================================================== */}
-            {/* Station Architectural Schematics: Tracks & Concourse Zones      */}
-            {/* =============================================================== */}
-
-            {/* --- STATION 1: MAS (Chennai Central) --- */}
+            {/* Station Architecture Schematics */}
             {activeStationId === 'MAS' && (
               <g id="mas-architecture">
-                {/* Concourse & Buffer Terminal Zone */}
                 <rect
                   x="50"
                   y="60"
@@ -486,7 +531,6 @@ export default function StationMap({
                   {t('concourseAndEntry', language)}
                 </text>
 
-                {/* Central FOB Skywalk (Level 1) */}
                 <rect
                   x="320"
                   y="280"
@@ -509,7 +553,6 @@ export default function StationMap({
                   {t('fobSkywalk', language)}
                 </text>
 
-                {/* Platform Tracks & Boarding Decks Zone */}
                 <rect
                   x="370"
                   y="340"
@@ -532,24 +575,19 @@ export default function StationMap({
                   {t('tracksAndPlatforms', language)}
                 </text>
 
-                {/* Authentic Railway Platform Tracks & Buffer Stops */}
                 <g id="mas-rail-tracks" opacity={isHighContrast ? 0.3 : 0.45}>
-                  {/* Platform 1 Track */}
                   <line x1="420" y1="476" x2="740" y2="476" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <line x1="420" y1="484" x2="740" y2="484" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <rect x="415" y="473" width="5" height="14" rx="1" fill="#DC2626" />
 
-                  {/* Platform 2 & 3/4 Tracks */}
                   <line x1="500" y1="436" x2="740" y2="436" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <line x1="500" y1="444" x2="740" y2="444" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <rect x="495" y="433" width="5" height="14" rx="1" fill="#DC2626" />
 
-                  {/* Platform 5/6 & 7/8 Tracks */}
                   <line x1="580" y1="436" x2="740" y2="436" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <line x1="580" y1="444" x2="740" y2="444" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <rect x="575" y="433" width="5" height="14" rx="1" fill="#DC2626" />
 
-                  {/* Platforms 9-12 Express Bay Track */}
                   <line x1="720" y1="376" x2="745" y2="376" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <line x1="720" y1="384" x2="745" y2="384" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <rect x="715" y="373" width="5" height="14" rx="1" fill="#DC2626" />
@@ -557,10 +595,8 @@ export default function StationMap({
               </g>
             )}
 
-            {/* --- STATION 2: MS (Chennai Egmore) --- */}
             {activeStationId === 'MS' && (
               <g id="ms-architecture">
-                {/* Main Heritage East Concourse */}
                 <rect
                   x="50"
                   y="380"
@@ -583,7 +619,6 @@ export default function StationMap({
                   {t('concourseAndEntry', language)}
                 </text>
 
-                {/* Underground Subway Corridor */}
                 <rect
                   x="210"
                   y="320"
@@ -606,7 +641,6 @@ export default function StationMap({
                   {t('subwayPassage', language)}
                 </text>
 
-                {/* West Concourse Gate */}
                 <rect
                   x="670"
                   y="150"
@@ -619,7 +653,6 @@ export default function StationMap({
                   strokeDasharray="4 4"
                 />
 
-                {/* Railway Tracks running across platforms 1 to 11 */}
                 <g id="ms-tracks" opacity={isHighContrast ? 0.3 : 0.45}>
                   <line x1="230" y1="476" x2="740" y2="476" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <line x1="230" y1="484" x2="740" y2="484" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
@@ -627,10 +660,8 @@ export default function StationMap({
               </g>
             )}
 
-            {/* --- STATION 3: TBM (Tambaram) --- */}
             {activeStationId === 'TBM' && (
               <g id="tbm-architecture">
-                {/* West Bus Stand Concourse */}
                 <rect
                   x="40"
                   y="140"
@@ -653,7 +684,6 @@ export default function StationMap({
                   WEST BUS STAND
                 </text>
 
-                {/* East GST Road Concourse */}
                 <rect
                   x="690"
                   y="220"
@@ -676,7 +706,6 @@ export default function StationMap({
                   GST ROAD
                 </text>
 
-                {/* Elevated FOB Spine Deck (Level 1) Spanning Across Platforms */}
                 <rect
                   x="180"
                   y="265"
@@ -699,7 +728,6 @@ export default function StationMap({
                   {t('fobSkywalk', language)}
                 </text>
 
-                {/* 4 Island Platform Track Corridors */}
                 <g id="tbm-tracks" opacity={isHighContrast ? 0.3 : 0.45}>
                   <line x1="190" y1="456" x2="670" y2="456" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
                   <line x1="190" y1="464" x2="670" y2="464" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 4" />
@@ -707,16 +735,13 @@ export default function StationMap({
               </g>
             )}
 
-            {/* =============================================================== */}
-            {/* Station Edges (Corridors, Ramps, Stairs, Elevators)             */}
-            {/* =============================================================== */}
+            {/* Station Edges */}
             <g id="station-edges">
               {edges.map((edge) => {
                 const from = nodeCoords.get(edge.fromNode);
                 const to = nodeCoords.get(edge.toNode);
                 if (!from || !to) return null;
 
-                // Deck filter check
                 const isEdgeOnDeck = selectedFloor === 'all' || (from.floor === selectedFloor || to.floor === selectedFloor);
                 if (!isEdgeOnDeck && selectedFloor !== 'all') return null;
 
@@ -758,12 +783,9 @@ export default function StationMap({
               })}
             </g>
 
-            {/* =============================================================== */}
-            {/* Active Route Polyline Layer with Directional Glow & Chevrons    */}
-            {/* =============================================================== */}
+            {/* Active Route Polyline Layer */}
             {routePoints && (
               <g id="active-route" filter="url(#routeGlow)">
-                {/* Wide soft glow */}
                 <polyline
                   points={routePoints}
                   fill="none"
@@ -773,7 +795,6 @@ export default function StationMap({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                {/* Solid core line */}
                 <polyline
                   points={routePoints}
                   fill="none"
@@ -782,7 +803,6 @@ export default function StationMap({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                {/* Animated white flow line with direction chevrons */}
                 <polyline
                   points={routePoints}
                   fill="none"
@@ -797,9 +817,7 @@ export default function StationMap({
               </g>
             )}
 
-            {/* =============================================================== */}
-            {/* Interactive Station Nodes & Icons                               */}
-            {/* =============================================================== */}
+            {/* Interactive Station Nodes */}
             <g id="station-nodes">
               {nodes.map((node) => {
                 const colorInfo = NODE_COLORS[node.type] || NODE_COLORS.hall;
@@ -807,9 +825,7 @@ export default function StationMap({
                 const isEnd = node.nodeId === endNodeId;
                 const isOnPath = pathNodeIds.has(node.nodeId);
                 const isHovered = hoveredNode?.nodeId === node.nodeId;
-                const isClicked = clickedNode?.nodeId === node.nodeId;
 
-                // Deck filter check
                 const isDeckMatch = selectedFloor === 'all' || node.floor === selectedFloor;
                 const nodeOpacity = isDeckMatch ? (pathNodes.length > 0 && !isOnPath && !isStart && !isEnd ? 0.7 : 1) : 0.15;
 
@@ -835,16 +851,15 @@ export default function StationMap({
                   <g
                     key={node.nodeId}
                     transform={`translate(${node.x}, ${node.y})`}
-                    onClick={() => {
-                      setClickedNode(node);
-                      if (onNodeClick) onNodeClick(node);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNodeSelect(node);
                     }}
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     className="cursor-pointer transition-all duration-200"
                     opacity={nodeOpacity}
                   >
-                    {/* Animated Pulsing Beacon for Start Node */}
                     {isStart && (
                       <circle
                         r="24"
@@ -855,7 +870,6 @@ export default function StationMap({
                       />
                     )}
 
-                    {/* Animated Pulsing Beacon for Destination Node */}
                     {isEnd && (
                       <circle
                         r="24"
@@ -866,7 +880,6 @@ export default function StationMap({
                       />
                     )}
 
-                    {/* Main Node Circle */}
                     <circle
                       r={radius}
                       fill={nodeBg}
@@ -885,12 +898,10 @@ export default function StationMap({
                       className="shadow-md"
                     />
 
-                    {/* Node Type Icon Inside Circle */}
                     <g transform="scale(0.95)" className="pointer-events-none">
                       {renderNodeIcon(node.type)}
                     </g>
 
-                    {/* Step-Free Certified Emerald Indicator Badge */}
                     {node.isAccessible && (
                       <circle
                         cx="10"
@@ -902,7 +913,6 @@ export default function StationMap({
                       />
                     )}
 
-                    {/* Prominent Floating "START" Badge */}
                     {isStart && (
                       <g transform="translate(0, -36)" className="pointer-events-none drop-shadow-md">
                         <rect
@@ -929,7 +939,6 @@ export default function StationMap({
                       </g>
                     )}
 
-                    {/* Prominent Floating "DESTINATION" Badge */}
                     {isEnd && (
                       <g transform="translate(0, -36)" className="pointer-events-none drop-shadow-md">
                         <rect
@@ -960,10 +969,8 @@ export default function StationMap({
               })}
             </g>
 
-            {/* =============================================================== */}
-            {/* Non-Overlapping Backdrop Pill Labels Layer                      */}
-            {/* =============================================================== */}
-            <g id="station-labels" className="pointer-events-none">
+            {/* Clickable Non-Overlapping Backdrop Pill Labels Layer */}
+            <g id="station-labels">
               {nodes.map((node) => {
                 const isStart = node.nodeId === startNodeId;
                 const isEnd = node.nodeId === endNodeId;
@@ -972,10 +979,8 @@ export default function StationMap({
 
                 if (!isDeckMatch && selectedFloor !== 'all') return null;
 
-                // Retrieve compact localized label (e.g. "PF 1", "PF 2", "Main Gate")
                 const labelText = getNodeShortLabel(node, language);
 
-                // Retrieve explicit collision-free placement offset
                 const offsetConfig = NODE_LABEL_OFFSETS[node.nodeId] || {
                   dy: node.y > 320 ? 30 : -26,
                 };
@@ -983,7 +988,6 @@ export default function StationMap({
                 const lx = node.x + (offsetConfig.dx || 0);
                 const ly = node.y + (offsetConfig.dy || 0);
 
-                // Calculate snug width for the backdrop pill
                 const pillWidth = Math.max(48, labelText.length * 7.5 + 16);
 
                 return (
@@ -991,8 +995,14 @@ export default function StationMap({
                     key={`label_${node.nodeId}`}
                     transform={`translate(${lx}, ${ly})`}
                     opacity={pathNodes.length > 0 && !isOnPath && !isStart && !isEnd ? 0.75 : 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNodeSelect(node);
+                    }}
+                    onMouseEnter={() => setHoveredNode(node)}
+                    onMouseLeave={() => setHoveredNode(null)}
+                    className="cursor-pointer"
                   >
-                    {/* Dark Translucent Pill Backdrop to eliminate clash with tracks & lines */}
                     <rect
                       x={-pillWidth / 2}
                       y="-10"
@@ -1012,10 +1022,9 @@ export default function StationMap({
                           : 'rgba(71, 85, 105, 0.5)'
                       }
                       strokeWidth={isOnPath || isStart || isEnd ? 1.8 : 1}
-                      className="shadow-sm"
+                      className="shadow-sm hover:stroke-blue-400 transition-colors"
                     />
 
-                    {/* Crisp, Centered Localized Label Text */}
                     <text
                       x="0"
                       y="3.5"
@@ -1034,6 +1043,7 @@ export default function StationMap({
                       fontSize={isLargeText ? '11' : '10'}
                       fontWeight={isOnPath || isStart || isEnd ? '800' : '600'}
                       letterSpacing="0.2"
+                      className="select-none pointer-events-none"
                     >
                       {labelText}
                     </text>
@@ -1044,17 +1054,17 @@ export default function StationMap({
           </g>
         </svg>
 
-        {/* Hovered / Clicked Node Interactive Detail Card */}
+        {/* Hovered / Clicked Node Interactive Detail Card with Quick Action Buttons */}
         {(hoveredNode || clickedNode) && (
           <div
-            className={`absolute top-3 right-3 text-xs p-3.5 rounded-xl border shadow-2xl max-w-xs z-10 space-y-2 transition-all ${
+            className={`absolute top-3 right-3 text-xs p-3.5 rounded-xl border shadow-2xl max-w-xs z-20 space-y-2.5 transition-all ${
               isHighContrast
                 ? 'bg-black border-white text-yellow-400'
                 : 'bg-slate-900/95 backdrop-blur-md border-slate-700 text-white'
             }`}
           >
             {(() => {
-              const activeNode = hoveredNode || clickedNode;
+              const activeNode = clickedNode || hoveredNode;
               return (
                 <>
                   <div className="flex items-start justify-between gap-2">
@@ -1098,12 +1108,30 @@ export default function StationMap({
                     </div>
                   </div>
 
-                  <div
-                    className={`text-[10px] pt-1 font-medium border-t ${
-                      isHighContrast ? 'border-yellow-900 text-yellow-300' : 'border-slate-800 text-blue-400'
-                    }`}
-                  >
-                    {t('clickToSetPrompt', language)}
+                  {/* Interactive Action Buttons: Set as Start / Set as Destination */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-700/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onSetStartNode) onSetStartNode(activeNode.nodeId);
+                        setClickedNode(null);
+                      }}
+                      className="flex-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-colors"
+                    >
+                      <MapPin className="w-3 h-3" />
+                      {t('setAsStart', language)}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onSetEndNode) onSetEndNode(activeNode.nodeId);
+                        setClickedNode(null);
+                      }}
+                      className="flex-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-colors"
+                    >
+                      <Navigation className="w-3 h-3" />
+                      {t('setAsDest', language)}
+                    </button>
                   </div>
                 </>
               );

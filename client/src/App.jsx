@@ -40,6 +40,7 @@ export default function App() {
   const [routeResult, setRouteResult] = useState(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [mapSelectionMode, setMapSelectionMode] = useState(null); // null | 'start' | 'destination'
 
   // Assistive / Accessibility State
   const [isHighContrast, setIsHighContrast] = useState(false);
@@ -203,27 +204,63 @@ export default function App() {
     setMaintenanceAlert(null);
   };
 
+  // Set Start location explicitly (from map click, dropdown, or card)
+  const handleSetStartNode = (nodeId) => {
+    setActiveSpokenStep(-1);
+    setStartNodeId(nodeId);
+    setMapSelectionMode(null);
+    if (endNodeId && nodeId !== endNodeId) {
+      setLoadingRoute(true);
+      calculateRoute({
+        stationId: currentStationId,
+        startNodeId: nodeId,
+        endNodeId,
+        requireAccessible,
+      })
+        .then((res) => setRouteResult(res))
+        .catch((err) => {
+          setErrorMessage(language === 'ta' && err.response?.data?.messageTa ? err.response.data.messageTa : 'Route calculation failed.');
+          setRouteResult(null);
+        })
+        .finally(() => setLoadingRoute(false));
+    }
+  };
+
+  // Set Destination location explicitly (from map click, dropdown, or card)
+  const handleSetEndNode = (nodeId) => {
+    setActiveSpokenStep(-1);
+    setEndNodeId(nodeId);
+    setMapSelectionMode(null);
+    if (startNodeId && nodeId !== startNodeId) {
+      setLoadingRoute(true);
+      calculateRoute({
+        stationId: currentStationId,
+        startNodeId,
+        endNodeId: nodeId,
+        requireAccessible,
+      })
+        .then((res) => setRouteResult(res))
+        .catch((err) => {
+          setErrorMessage(language === 'ta' && err.response?.data?.messageTa ? err.response.data.messageTa : 'Route calculation failed.');
+          setRouteResult(null);
+        })
+        .finally(() => setLoadingRoute(false));
+    }
+  };
+
   // Click on map node handler
   const handleNodeClick = (node) => {
     setActiveSpokenStep(-1);
-    if (!startNodeId) {
-      setStartNodeId(node.nodeId);
-    } else if (!endNodeId || (startNodeId && endNodeId)) {
-      setEndNodeId(node.nodeId);
-      if (startNodeId !== node.nodeId) {
-        setLoadingRoute(true);
-        calculateRoute({
-          stationId: currentStationId,
-          startNodeId: startNodeId,
-          endNodeId: node.nodeId,
-          requireAccessible,
-        })
-          .then((res) => setRouteResult(res))
-          .catch((err) => {
-            setErrorMessage(language === 'ta' && err.response?.data?.messageTa ? err.response.data.messageTa : 'Route calculation failed.');
-            setRouteResult(null);
-          })
-          .finally(() => setLoadingRoute(false));
+    if (mapSelectionMode === 'start') {
+      handleSetStartNode(node.nodeId);
+    } else if (mapSelectionMode === 'destination') {
+      handleSetEndNode(node.nodeId);
+    } else {
+      // Default: if start not set, set start; else set destination
+      if (!startNodeId) {
+        handleSetStartNode(node.nodeId);
+      } else {
+        handleSetEndNode(node.nodeId);
       }
     }
   };
@@ -345,8 +382,8 @@ export default function App() {
               startNodeId={startNodeId}
               endNodeId={endNodeId}
               requireAccessible={requireAccessible}
-              onChangeStart={(id) => setStartNodeId(id)}
-              onChangeEnd={(id) => setEndNodeId(id)}
+              onChangeStart={handleSetStartNode}
+              onChangeEnd={handleSetEndNode}
               onToggleAccessible={handleToggleAccessible}
               onFindRoute={() => handleCalculateRoute(requireAccessible)}
               onSwapPoints={handleSwapPoints}
@@ -364,6 +401,8 @@ export default function App() {
               isHighContrast={isHighContrast}
               isLargeText={isLargeText}
               language={language}
+              mapSelectionMode={mapSelectionMode}
+              onToggleMapSelectionMode={(mode) => setMapSelectionMode(mode)}
             />
 
             {/* Voice Audio Guidance Component */}
@@ -406,6 +445,10 @@ export default function App() {
                 startNodeId={startNodeId}
                 endNodeId={endNodeId}
                 onNodeClick={handleNodeClick}
+                onSetStartNode={handleSetStartNode}
+                onSetEndNode={handleSetEndNode}
+                mapSelectionMode={mapSelectionMode}
+                onCancelMapSelectionMode={() => setMapSelectionMode(null)}
                 isHighContrast={isHighContrast}
                 isLargeText={isLargeText}
                 language={language}
