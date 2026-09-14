@@ -133,7 +133,7 @@ export default function NavigationControls({
             <select
               value={startNodeId || ''}
               onChange={(e) => onChangeStart(e.target.value)}
-              className={`w-full rounded-xl px-3.5 py-2.5 font-medium transition-all outline-none border ${
+              className={`w-full rounded-xl px-3.5 py-3 min-h-[46px] font-medium transition-all outline-none border ${
                 isHighContrast
                   ? 'bg-black border-white text-yellow-400 focus:ring-2 focus:ring-yellow-400'
                   : 'bg-slate-50 border-slate-200 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white'
@@ -166,13 +166,13 @@ export default function NavigationControls({
             onClick={onSwapPoints}
             disabled={!startNodeId && !endNodeId}
             title={t('swapPoints', language)}
-            className={`p-1.5 rounded-full border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs ${
+            className={`p-2 rounded-full border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs min-w-[36px] min-h-[36px] flex items-center justify-center ${
               isHighContrast
                 ? 'border-white bg-black text-yellow-400 hover:bg-yellow-400 hover:text-black'
                 : 'border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
             }`}
           >
-            <ArrowUpDown className="h-3.5 w-3.5" />
+            <ArrowUpDown className="h-4 w-4" />
           </button>
         </div>
 
@@ -214,7 +214,7 @@ export default function NavigationControls({
             <select
               value={endNodeId || ''}
               onChange={(e) => onChangeEnd(e.target.value)}
-              className={`w-full rounded-xl px-3.5 py-2.5 font-medium transition-all outline-none border ${
+              className={`w-full rounded-xl px-3.5 py-3 min-h-[46px] font-medium transition-all outline-none border ${
                 isHighContrast
                   ? 'bg-black border-white text-yellow-400 focus:ring-2 focus:ring-yellow-400'
                   : 'bg-slate-50 border-slate-200 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white'
@@ -333,7 +333,7 @@ export default function NavigationControls({
         type="button"
         onClick={onFindRoute}
         disabled={loadingRoute || !startNodeId || !endNodeId || startNodeId === endNodeId}
-        className={`w-full py-3 rounded-xl font-bold tracking-wide flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer ${
+        className={`w-full py-3.5 min-h-[48px] rounded-xl font-bold tracking-wide flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer ${
           isHighContrast
             ? 'bg-yellow-400 hover:bg-yellow-300 text-black border-2 border-white'
             : requireAccessible

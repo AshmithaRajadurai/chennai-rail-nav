@@ -14,7 +14,10 @@ import {
   AlertCircle, 
   Accessibility, 
   Info, 
-  AlertTriangle 
+  AlertTriangle,
+  Map,
+  Compass,
+  ArrowRight
 } from 'lucide-react';
 import { t } from './utils/translations';
 
@@ -26,6 +29,9 @@ export default function App() {
   const [showLanguageModal, setShowLanguageModal] = useState(() => {
     return !localStorage.getItem('railnav_lang');
   });
+
+  // Mobile View Switcher State: 'map' | 'planner'
+  const [mobileTab, setMobileTab] = useState('map');
 
   // Station State
   const [stations, setStations] = useState([]);
@@ -373,10 +379,85 @@ export default function App() {
           </div>
         )}
 
+        {/* Mobile View Switcher (Segmented Tab Bar for Small & Medium Screens) */}
+        <div
+          className={`lg:hidden flex items-center p-1 rounded-2xl border shadow-xs transition-colors ${
+            isHighContrast
+              ? 'bg-black border-white'
+              : 'bg-slate-200/90 border-slate-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => setMobileTab('map')}
+            className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] ${
+              mobileTab === 'map'
+                ? isHighContrast
+                  ? 'bg-yellow-400 text-black shadow-md font-bold'
+                  : 'bg-blue-600 text-white shadow-md'
+                : isHighContrast
+                ? 'text-yellow-300 hover:text-white'
+                : 'text-slate-700 hover:text-slate-950'
+            }`}
+          >
+            <Map className="w-4 h-4 shrink-0" />
+            <span>{t('mapTab', language)}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('planner')}
+            className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] ${
+              mobileTab === 'planner'
+                ? isHighContrast
+                  ? 'bg-yellow-400 text-black shadow-md font-bold'
+                  : 'bg-blue-600 text-white shadow-md'
+                : isHighContrast
+                ? 'text-yellow-300 hover:text-white'
+                : 'text-slate-700 hover:text-slate-950'
+            }`}
+          >
+            <Compass className="w-4 h-4 shrink-0" />
+            <span>{t('plannerTab', language)}</span>
+            {routeResult?.instructions?.length > 0 && (
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  mobileTab === 'planner'
+                    ? 'bg-white/25 text-white'
+                    : isHighContrast
+                    ? 'bg-yellow-400 text-black'
+                    : 'bg-blue-600 text-white'
+                }`}
+              >
+                {routeResult.instructions.length}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Two-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Route Controls & Voice & Directions */}
-          <div className="lg:col-span-4 space-y-6 order-2 lg:order-1">
+          <div
+            className={`lg:col-span-4 space-y-6 order-2 lg:order-1 ${
+              mobileTab === 'planner' ? 'block' : 'hidden lg:block'
+            }`}
+          >
+            {/* Mobile quick button to view map */}
+            <div className="lg:hidden pb-1">
+              <button
+                type="button"
+                onClick={() => setMobileTab('map')}
+                className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] border ${
+                  isHighContrast
+                    ? 'bg-black border-yellow-400 text-yellow-300 hover:bg-yellow-400 hover:text-black'
+                    : 'bg-slate-200/80 hover:bg-slate-300 text-slate-800 border-slate-300'
+                }`}
+              >
+                <Map className="w-4 h-4" />
+                <span>{t('backToMap', language)}</span>
+              </button>
+            </div>
+
             <NavigationControls
               nodes={stationData.nodes}
               startNodeId={startNodeId}
@@ -402,7 +483,10 @@ export default function App() {
               isLargeText={isLargeText}
               language={language}
               mapSelectionMode={mapSelectionMode}
-              onToggleMapSelectionMode={(mode) => setMapSelectionMode(mode)}
+              onToggleMapSelectionMode={(mode) => {
+                setMapSelectionMode(mode);
+                if (mode) setMobileTab('map');
+              }}
             />
 
             {/* Voice Audio Guidance Component */}
@@ -434,8 +518,12 @@ export default function App() {
           </div>
 
           {/* Right Column: Interactive Map Canvas */}
-          <div className="lg:col-span-8 space-y-3 order-1 lg:order-2 h-full">
-            <div className="h-[580px] sm:h-[640px]">
+          <div
+            className={`lg:col-span-8 space-y-3 order-1 lg:order-2 h-full ${
+              mobileTab === 'map' ? 'block' : 'hidden lg:block'
+            }`}
+          >
+            <div className="h-[460px] sm:h-[560px] lg:h-[640px]">
               <StationMap
                 station={stationData.station}
                 nodes={stationData.nodes}
@@ -454,6 +542,28 @@ export default function App() {
                 language={language}
               />
             </div>
+
+            {/* Mobile Quick Jump to Directions Button */}
+            {routeResult?.instructions?.length > 0 && (
+              <div className="lg:hidden pt-1">
+                <button
+                  type="button"
+                  onClick={() => setMobileTab('planner')}
+                  className={`w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer min-h-[46px] border ${
+                    isHighContrast
+                      ? 'bg-yellow-400 text-black border-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 shadow-blue-600/20'
+                  }`}
+                >
+                  <Compass className="w-4 h-4" />
+                  <span>
+                    {t('viewDirections', language)} ({routeResult.instructions.length}{' '}
+                    {t('stepsCount', language)})
+                  </span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>
