@@ -30,6 +30,8 @@ export default function NavigationControls({
   isHighContrast = false,
   isLargeText = false,
   language = 'en',
+  mapSelectionMode = null,
+  onToggleMapSelectionMode,
 }) {
   const estimatedTimeMinutes = routeStats?.totalDistance
     ? Math.max(1, Math.round((routeStats.totalDistance / 65) * 10) / 10)
@@ -108,13 +110,24 @@ export default function NavigationControls({
               ></span>
               {t('startLocation', language)}
             </span>
-            <span
-              className={`font-normal ${
-                isHighContrast ? 'text-yellow-400/70' : 'text-slate-400'
+            <button
+              type="button"
+              onClick={() => onToggleMapSelectionMode && onToggleMapSelectionMode(mapSelectionMode === 'start' ? null : 'start')}
+              className={`inline-flex items-center gap-1 font-semibold transition-all cursor-pointer rounded-md px-1.5 py-0.5 border ${
+                mapSelectionMode === 'start'
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-xs animate-pulse'
+                  : isHighContrast
+                  ? 'border-yellow-400/40 text-yellow-300 hover:bg-yellow-400 hover:text-black'
+                  : 'border-blue-200 bg-blue-50/80 text-blue-700 hover:bg-blue-100 hover:text-blue-900'
               } ${isLargeText ? 'text-xs' : 'text-[10px]'}`}
             >
-              {t('orClickOnMap', language)}
-            </span>
+              <MapPin className="w-2.5 h-2.5" />
+              <span>
+                {mapSelectionMode === 'start'
+                  ? t('clickNodeOnMap', language)
+                  : t('orClickOnMap', language)}
+              </span>
+            </button>
           </label>
           <div className="relative">
             <select
@@ -178,13 +191,24 @@ export default function NavigationControls({
               ></span>
               {t('destination', language)}
             </span>
-            <span
-              className={`font-normal ${
-                isHighContrast ? 'text-yellow-400/70' : 'text-slate-400'
+            <button
+              type="button"
+              onClick={() => onToggleMapSelectionMode && onToggleMapSelectionMode(mapSelectionMode === 'destination' ? null : 'destination')}
+              className={`inline-flex items-center gap-1 font-semibold transition-all cursor-pointer rounded-md px-1.5 py-0.5 border ${
+                mapSelectionMode === 'destination'
+                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs animate-pulse'
+                  : isHighContrast
+                  ? 'border-yellow-400/40 text-yellow-300 hover:bg-yellow-400 hover:text-black'
+                  : 'border-emerald-200 bg-emerald-50/80 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900'
               } ${isLargeText ? 'text-xs' : 'text-[10px]'}`}
             >
-              {t('orClickOnMap', language)}
-            </span>
+              <MapPin className="w-2.5 h-2.5" />
+              <span>
+                {mapSelectionMode === 'destination'
+                  ? t('clickNodeOnMap', language)
+                  : t('orClickOnMap', language)}
+              </span>
+            </button>
           </label>
           <div className="relative">
             <select
