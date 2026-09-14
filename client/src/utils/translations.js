@@ -22,6 +22,10 @@ export const translations = {
     largeText: 'Large Text Zoom',
     facilityControl: 'Facility Control',
     languageSelector: 'Language',
+    mapTab: 'Station Map',
+    plannerTab: 'Route & Guide',
+    viewDirections: 'View Directions',
+    backToMap: 'Back to Map',
 
     // Route Planner Controls
     routePlannerTitle: 'Station Route Planner',
@@ -140,6 +144,10 @@ export const translations = {
     largeText: 'பெரிய எழுத்துக்கள் (Large Text)',
     facilityControl: 'பராமரிப்பு கட்டுப்பாடு',
     languageSelector: 'மொழி',
+    mapTab: 'நிலைய வரைபடம்',
+    plannerTab: 'பாதை & வழிகாட்டி',
+    viewDirections: 'வழிகாட்டுதலைக் காண்க',
+    backToMap: 'வரைபடத்திற்கு திரும்பு',
 
     // Route Planner Controls (Spoken Tamil)
     routePlannerTitle: 'வழிகாட்டி திட்டம்',
@@ -258,6 +266,10 @@ export const translations = {
     largeText: 'పెద్ద అక్షరాలు (Large Text)',
     facilityControl: 'సదుపాయాల నియంత్రణ',
     languageSelector: 'భాష',
+    mapTab: 'స్టేషన్ మ్యాప్',
+    plannerTab: 'మార్గం & గైడ్',
+    viewDirections: 'దిశలను చూడండి',
+    backToMap: 'మ్యాప్‌కు తిరిగి వెళ్ళండి',
 
     // Route Planner Controls (Telugu)
     routePlannerTitle: 'స్టేషన్ రూట్ ప్లానర్',
@@ -376,6 +388,10 @@ export const translations = {
     largeText: 'ದೊಡ್ಡ ಅಕ್ಷರಗಳು (Large Text)',
     facilityControl: 'ಸೌಲಭ್ಯ ನಿಯಂತ್ರಣ',
     languageSelector: 'ಭಾಷೆ',
+    mapTab: 'ನಿಲ್ದಾಣ ನಕ್ಷೆ',
+    plannerTab: 'ಮಾರ್ಗ & ಮಾರ್ಗದರ್ಶಿ',
+    viewDirections: 'ನಿರ್ದೇಶನಗಳನ್ನು ವೀಕ್ಷಿಸಿ',
+    backToMap: 'ನಕ್ಷೆಗೆ ಹಿಂತಿರುಗಿ',
 
     // Route Planner Controls (Kannada)
     routePlannerTitle: 'ನಿಲ್ದಾಣ ಮಾರ್ಗ ಯೋಜಕ',
@@ -494,6 +510,10 @@ export const translations = {
     largeText: 'വലിയ അക്ഷരങ്ങൾ (Large Text)',
     facilityControl: 'സൗകര്യ നിയന്ത്രണം',
     languageSelector: 'ഭാഷ',
+    mapTab: 'സ്റ്റേഷൻ മാപ്പ്',
+    plannerTab: 'റൂട്ട് & ഗൈഡ്',
+    viewDirections: 'ദിശകൾ കാണുക',
+    backToMap: 'മാപ്പിലേക്ക് മടങ്ങുക',
 
     // Route Planner Controls (Malayalam)
     routePlannerTitle: 'സ്റ്റേഷൻ റൂട്ട് പ്ലാനർ',
@@ -612,6 +632,10 @@ export const translations = {
     largeText: 'बड़े अक्षर (Large Text Zoom)',
     facilityControl: 'सुविधा नियंत्रण (Maintenance)',
     languageSelector: 'भाषा',
+    mapTab: 'स्टेशन मानचित्र',
+    plannerTab: 'मार्ग और गाइड',
+    viewDirections: 'दिशा-निर्देश देखें',
+    backToMap: 'मानचित्र पर वापस',
 
     // Route Planner Controls
     routePlannerTitle: 'स्टेशन रूट प्लानर',

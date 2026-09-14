@@ -11,7 +11,7 @@ import {
   Globe 
 } from 'lucide-react';
 import { t, LANGUAGES } from '../utils/translations';
-import { getStationDisplayName } from '../utils/landmarkTranslations';
+import { getStationDisplayName, getStationShortName } from '../utils/landmarkTranslations';
 
 const CHENNAI_STATIONS = ['MAS', 'MS', 'TBM'];
 
@@ -83,16 +83,17 @@ export default function Header({
           </div>
 
           {/* Station Quick-Switch Badges */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
             {CHENNAI_STATIONS.map((stnId) => {
               const isSelected = currentStationId === stnId;
               const localizedName = getStationDisplayName(stnId, language);
+              const shortName = getStationShortName(stnId, language);
               return (
                 <button
                   key={stnId}
                   type="button"
                   onClick={() => onSelectStation(stnId)}
-                  className={`px-3 py-1.5 rounded-xl text-left transition-all cursor-pointer border ${
+                  className={`flex-1 sm:flex-initial px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-center sm:text-left transition-all cursor-pointer border min-h-[40px] flex items-center justify-center ${
                     isSelected
                       ? isHighContrast
                         ? 'bg-yellow-400 text-black border-white font-bold'
@@ -102,35 +103,36 @@ export default function Header({
                       : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
                   }`}
                 >
-                  <span className={`font-semibold ${isLargeText ? 'text-xs sm:text-sm' : 'text-xs'}`}>
-                    {localizedName}
+                  <span className={`font-semibold leading-tight ${isLargeText ? 'text-xs sm:text-sm' : 'text-xs'}`}>
+                    <span className="inline sm:hidden">{shortName}</span>
+                    <span className="hidden sm:inline">{localizedName}</span>
                   </span>
                 </button>
               );
             })}
           </div>
 
-          {/* Right Toolbar: 5-Language Switcher + Facility Control + Accessibility */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* 5-Language Selector Dropdown */}
-            <div className="relative">
+          {/* Right Toolbar: Language Switcher + Accessibility */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full lg:w-auto">
+            {/* Language Selector Dropdown */}
+            <div className="relative flex-1 sm:flex-initial">
               <button
                 type="button"
                 onClick={() => setShowLangDropdown(!showLangDropdown)}
-                className={`px-3 py-1.5 rounded-xl border flex items-center space-x-1.5 text-xs font-bold transition-all cursor-pointer ${
+                className={`w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-xl border flex items-center justify-center space-x-1.5 text-xs font-bold transition-all cursor-pointer min-h-[40px] ${
                   isHighContrast
                     ? 'border-white bg-black text-yellow-400 hover:bg-yellow-400 hover:text-black'
                     : 'border-blue-500/40 bg-blue-600/20 hover:bg-blue-600/30 text-blue-100'
                 }`}
               >
-                <Globe className="h-3.5 w-3.5 text-yellow-400" />
+                <Globe className="h-3.5 w-3.5 text-yellow-400 shrink-0" />
                 <span>{activeLangObj.native}</span>
-                <ChevronDown className="h-3 w-3" />
+                <ChevronDown className="h-3 w-3 shrink-0" />
               </button>
 
               {showLangDropdown && (
                 <div
-                  className={`absolute right-0 mt-2 w-48 rounded-2xl border shadow-2xl p-1.5 z-50 ${
+                  className={`absolute right-0 mt-2 w-48 max-w-[calc(100vw-2rem)] rounded-2xl border shadow-2xl p-1.5 z-50 ${
                     isHighContrast
                       ? 'bg-black border-white text-yellow-400'
                       : 'bg-slate-900 border-slate-700 text-white'
@@ -166,24 +168,24 @@ export default function Header({
             </div>
 
             {/* Accessibility Options Menu */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-initial">
               <button
                 type="button"
                 onClick={() => setShowAccessMenu(!showAccessMenu)}
-                className={`px-3 py-1.5 rounded-xl border flex items-center space-x-1.5 text-xs font-bold transition-all cursor-pointer ${
+                className={`w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-xl border flex items-center justify-center space-x-1.5 text-xs font-bold transition-all cursor-pointer min-h-[40px] ${
                   isHighContrast
                     ? 'border-white bg-yellow-400 text-black'
                     : 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200'
                 }`}
               >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
+                <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
                 <span>{t('accessibilityOptions', language)}</span>
-                <ChevronDown className="h-3 w-3" />
+                <ChevronDown className="h-3 w-3 shrink-0" />
               </button>
 
               {showAccessMenu && (
                 <div
-                  className={`absolute right-0 mt-2 w-64 rounded-2xl border shadow-2xl p-3 space-y-3 z-50 ${
+                  className={`absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border shadow-2xl p-3 space-y-3 z-50 ${
                     isHighContrast
                       ? 'bg-black border-white text-yellow-400'
                       : 'bg-slate-900 border-slate-700 text-white'

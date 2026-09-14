@@ -227,6 +227,14 @@ export default function StationMap({
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
   const dragDistanceRef = useRef(0);
+  const touchStateRef = useRef({
+    startX: 0,
+    startY: 0,
+    startPanX: 0,
+    startPanY: 0,
+    initialDistance: 0,
+    initialZoom: 1,
+  });
 
   const activeStationId = station?.stationId || nodes[0]?.stationId || 'MAS';
 
@@ -259,7 +267,7 @@ export default function StationMap({
   };
 
   // Zoom and pan handlers
-  const handleZoomIn = () => setZoom((z) => Math.min(2.2, +(z + 0.25).toFixed(2)));
+  const handleZoomIn = () => setZoom((z) => Math.min(2.5, +(z + 0.25).toFixed(2)));
   const handleZoomOut = () => setZoom((z) => Math.max(0.75, +(z - 0.25).toFixed(2)));
   const handleResetZoom = () => {
     setZoom(1);
@@ -283,6 +291,68 @@ export default function StationMap({
   };
 
   const handleMouseUp = () => setIsPanning(false);
+
+  // Mobile Touch pan and pinch-zoom handlers
+  const handleTouchStart = (e) => {
+    dragDistanceRef.current = 0;
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      touchStateRef.current = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        startPanX: pan.x,
+        startPanY: pan.y,
+        initialDistance: 0,
+        initialZoom: zoom,
+      };
+      setIsPanning(true);
+    } else if (e.touches.length === 2) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      touchStateRef.current = {
+        ...touchStateRef.current,
+        initialDistance: dist,
+        initialZoom: zoom,
+      };
+      setIsPanning(false);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 1 && isPanning) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStateRef.current.startX;
+      const dy = touch.clientY - touchStateRef.current.startY;
+      dragDistanceRef.current += Math.abs(dx) + Math.abs(dy);
+      setPan({
+        x: touchStateRef.current.startPanX + dx,
+        y: touchStateRef.current.startPanY + dy,
+      });
+    } else if (e.touches.length === 2 && touchStateRef.current.initialDistance > 0) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const scaleMultiplier = dist / touchStateRef.current.initialDistance;
+      const newZoom = Math.min(2.5, Math.max(0.75, +(touchStateRef.current.initialZoom * scaleMultiplier).toFixed(2)));
+      dragDistanceRef.current = 25; // prevent treating pinch-zoom as a tap
+      setZoom(newZoom);
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length === 0) {
+      setIsPanning(false);
+      touchStateRef.current.initialDistance = 0;
+    } else if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      touchStateRef.current.startX = touch.clientX;
+      touchStateRef.current.startY = touch.clientY;
+      touchStateRef.current.startPanX = pan.x;
+      touchStateRef.current.startPanY = pan.y;
+      setIsPanning(true);
+    }
+  };
 
   // Unified node selection handler for circle click or label pill click
   const handleNodeSelect = (node) => {
@@ -318,14 +388,14 @@ export default function StationMap({
       {/* Active Map Selection Mode Banner */}
       {mapSelectionMode && (
         <div
-          className={`absolute top-14 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full shadow-2xl border flex items-center gap-2.5 animate-bounce ${
+          className={`absolute top-14 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-2xl border flex items-center justify-between gap-2 max-w-[92vw] w-max animate-bounce ${
             mapSelectionMode === 'start'
               ? 'bg-blue-600 border-blue-400 text-white ring-4 ring-blue-500/30'
               : 'bg-emerald-600 border-emerald-400 text-white ring-4 ring-emerald-500/30'
           }`}
         >
-          <MapPin className="w-4 h-4 animate-spin" />
-          <span className="text-xs font-bold">
+          <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin shrink-0" />
+          <span className="text-[11px] sm:text-xs font-bold leading-tight">
             {mapSelectionMode === 'start'
               ? t('selectStartPrompt', language)
               : t('selectDestPrompt', language)}
@@ -449,7 +519,7 @@ export default function StationMap({
 
       {/* SVG Canvas Area */}
       <div
-        className={`relative flex-1 overflow-hidden flex items-center justify-center min-h-[460px] ${
+        className={`relative flex-1 overflow-hidden flex items-center justify-center min-h-[360px] sm:min-h-[460px] ${
           isHighContrast ? 'bg-black' : 'bg-slate-950'
         }`}
       >
@@ -468,6 +538,11 @@ export default function StationMap({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          style={{ touchAction: 'none' }}
           className={`w-full h-full select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
           preserveAspectRatio="xMidYMid meet"
         >
@@ -1057,7 +1132,7 @@ export default function StationMap({
         {/* Hovered / Clicked Node Interactive Detail Card with Quick Action Buttons */}
         {(hoveredNode || clickedNode) && (
           <div
-            className={`absolute top-3 right-3 text-xs p-3.5 rounded-xl border shadow-2xl max-w-xs z-20 space-y-2.5 transition-all ${
+            className={`absolute bottom-3 left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 text-xs p-3 sm:p-3.5 rounded-xl border shadow-2xl sm:max-w-xs z-20 space-y-2.5 transition-all ${
               isHighContrast
                 ? 'bg-black border-white text-yellow-400'
                 : 'bg-slate-900/95 backdrop-blur-md border-slate-700 text-white'

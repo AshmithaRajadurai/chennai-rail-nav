@@ -668,3 +668,37 @@ export function getStationDisplayName(stationId, lang = 'en') {
   }
   return stationId;
 }
+
+/**
+ * Returns a compact short name for stations, ideal for mobile navigation toolbars
+ */
+export function getStationShortName(stationId, lang = 'en') {
+  const shortNames = {
+    MAS: {
+      en: 'Central (MAS)',
+      ta: 'சென்ட்ரல்',
+      te: 'సెంట్రల్',
+      kn: 'ಸೆಂಟ್ರಲ್',
+      ml: 'സെൻട്രൽ',
+      hi: 'सेंट्रल',
+    },
+    MS: {
+      en: 'Egmore (MS)',
+      ta: 'எழும்பூர்',
+      te: 'ఎగ్మోర్',
+      kn: 'ಎಗ್ಮೋರ್',
+      ml: 'എഗ്മോർ',
+      hi: 'एग्मोर',
+    },
+    TBM: {
+      en: 'Tambaram (TBM)',
+      ta: 'தாம்பரம்',
+      te: 'తాంబరం',
+      kn: 'ತಾಂಬರಂ',
+      ml: 'താംബരം',
+      hi: 'तांबरम',
+    },
+  };
+  return shortNames[stationId]?.[lang] || shortNames[stationId]?.en || stationId;
+}
+
